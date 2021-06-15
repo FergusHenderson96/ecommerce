@@ -1,21 +1,71 @@
-import React, {useContext, useState} from 'react'
+import React, {useContext, useState, useEffect} from 'react'
 import {GlobalState} from '../../../GlobalState'
 import {Link} from 'react-router-dom'
+import axios from 'axios' 
 
 function Cart() {
     const state = useContext(GlobalState)
-    const [cart] = state.userAPI.cart
-    const [total, setTotal] = useState
+    const [cart, setCart] = state.userAPI.cart
+    const [token] = state.token
+    const [total, setTotal] = useState(0)
+
+    useEffect(() => {
+        const getTotal = () => {
+            const total = cart.reduce((prev, item) => {
+                return prev + (item.price * item.quantity)
+            }, 0)
+        setTotal (total)
+        }
+        getTotal()
+    }, [cart])
+
+    const addToCart = async () => {
+        await axios.patch('/user/addCart', {cart}, {
+            headers: {Authorization: token}
+        })
+    }
+
+    const increment = (id) => {
+        cart.forEach(item => {
+            if(item._id === id) {
+                item.quantity += 1
+            }
+        })
+        setCart ([...cart])
+        addToCart()
+    }
+
+    const decrement = (id) => {
+        cart.forEach(item => {
+            if(item._id === id) {
+                item.quantity === 1 ? item.quantity = 1 : item.quantity -=1
+            }
+        })
+        setCart ([...cart])
+        addToCart()
+    }
+
+    const removeProduct = id => {
+        if(window.confirm("Do you want to delete this product?")){
+            cart.forEach((item, index) => {
+                if(item._id === id){
+                    cart.splice(index, 1)
+                }
+            })
+
+            setCart([...cart])
+            addToCart()
+        }
+    }
 
     if(cart.length === 0)
-    return <h2 style={{textAlign: "center", fontSize: "5rem"}}>Cart empyt</h2>
+    return <h2 style={{textAlign: "center", fontSize: "5rem"}}>Cart empty</h2>
     return (
         <div>
             {
                 cart.map(product => (
 
-                <div className="detail cart
-                ">
+                <div className="detail cart" key={product._id}>
                     <img src={product.images.url} alt=""/>
                         <div className="box-detail">
                             <h2>{product.title}</h2>
@@ -24,12 +74,12 @@ function Cart() {
                             <p>{product.content}</p>
 
                             <div className="amount">
-                                <button> - </button>
+                                <button onClick={() => decrement(product._id)}> - </button>
                                 <span>{product.quantity}</span>
-                                <button> + </button>
+                                <button onClick={() => increment(product._id)}> + </button>
                             </div>
 
-                            <div className="delete">X</div>
+                            <div className="delete" onClick={() => removeProduct(product._id)}>X</div>
                             
                         </div>
                 </div>
